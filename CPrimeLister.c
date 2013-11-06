@@ -8,8 +8,25 @@
 int addNodeByValue(int value);
 int isPrime(int value);
 
+// Struct, not for user access
+// This is the individaul node in CPrimeLister
+static struct CPrimeNode {
+       unsigned int prime;
+       struct CPrimeNode* next;
+};
+
+// This is a singly linked list head node for CPrimeLister
+struct CPrimeLister {
+       unsigned int biggestPrime;  // Biggest prime found
+       unsigned int primeCount;    // Number of primes found
+       unsigned int curRoot;       // The root to check against in NextPrime()
+       struct CPrimeNode* first;          // First node in the list
+       struct CPrimeNode* last;           // Last node in the list
+} thePrimes;
+
+
 // And now, on with the show!
-unsigned int initThePrimes() {
+int initThePrimes() {
 	unsigned int first[5] = {2, 3, 5, 7, 11};	// First 5 primes
 	int i;										// For loop iterator
 	
@@ -19,7 +36,7 @@ unsigned int initThePrimes() {
 	
 	// Prime the Pump
 	if (!(thePrimes.first = thePrimes.last = malloc(sizeof(struct CPrimeNode)))) {
-		printf("%d\n", thePrimes.first);
+		//printf("%d\n", thePrimes.first);
 		return 0;
 	}
 	thePrimes.first->prime = first[0];
@@ -28,7 +45,7 @@ unsigned int initThePrimes() {
 		if (!(addNodeByValue(first[i]))) {
 			return 0;
 		}
-		printf("%d\n", thePrimes.primeCount);
+		//printf("%d\n", thePrimes.primeCount);
 	}
 	
 	return 1;
@@ -103,6 +120,21 @@ unsigned int nextPrime() {
 	return curNum;
 }
 
+unsigned int findPrimesUntil(unsigned int ceiling) {
+	while (thePrimes.biggestPrime < ceiling) {
+		if (nextPrime() == 0) {
+			return 0;
+		}
+	}
+	
+	if (thePrimes.biggestPrime > ceiling) {
+		// Get rid of it
+		removePrime();
+	}
+	
+	return thePrimes.biggestPrime;
+}
+
 int isPrime(int value) {
 	struct CPrimeNode *curNode = thePrimes.first;
 	int i;
@@ -123,7 +155,7 @@ unsigned long long sumThePrimes() {
 	struct CPrimeNode *curNode = thePrimes.first;
 	int i;
 	
-	printf("%d\n", thePrimes.primeCount);
+	//printf("%d\n", thePrimes.primeCount);
 	for (i = 0; i < thePrimes.primeCount; i++) {
 		sum += (unsigned long long)(curNode->prime);
 		curNode = curNode->next;
@@ -135,8 +167,8 @@ unsigned long long sumThePrimes() {
 		}
 	}
 	
-	printf("%x\n", sum);
-	printf("%x\n", sum >> 16);
+	//printf("%x\n", sum);
+	//printf("%x\n", sum >> 16);
 	return sum;
 }
 
@@ -152,4 +184,35 @@ void printPrimeRange(int start, int stop) {
 		printf("%6d: %10d\n", i, cur->prime);
 		cur = cur->next;
 	}
+}
+
+int removePrime() {
+	// Things to change: biggestPrime, primeCount, *last
+	// Things to check: curRoot
+	struct CPrimeNode *curNode = thePrimes.first;
+	
+	// First, check to see if this list has only one node
+	if (curNode == thePrimes.last) {
+		// Only one node, break. Everything breaks without an initial prime.
+		return 1;
+	}
+	// Set curNode to the penultimate node
+	while (curNode->next != thePrimes.last) {
+		curNode = curNode->next;
+	}
+	
+	thePrimes.biggestPrime = curNode->prime;
+	thePrimes.primeCount--;
+	thePrimes.last = curNode;
+	
+	if (thePrimes.curRoot-1 * (thePrimes.curRoot - 1) > thePrimes.biggestPrime) {
+		// It can be smaller
+		thePrimes.curRoot--;
+	}
+	
+	// Free up the space used by the to be deleted node
+	free(curNode->next);
+	curNode->next = 0;
+	
+	return 1;
 }
